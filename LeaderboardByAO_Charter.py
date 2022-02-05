@@ -6,7 +6,7 @@ for each AO for the current month and YTD on total attendance.
 The graph then is sent to each AO in a Slack message.
 '''
 
-from slacker import Slacker
+from slack_sdk import WebClient
 import pandas as pd
 import pymysql.cursors
 import datetime
@@ -30,8 +30,7 @@ region = sys.argv[3]
 
 # Set Slack token
 key = sys.argv[2]
-#key = config['slack']['prod_key']
-slack = Slacker(key)
+slack = WebClient(token=key)
 firstf = sys.argv[4] #designated 1st-f channel for the region
 
 #Define AWS Database connection criteria
@@ -49,6 +48,7 @@ total_graphs = 0 # Sets a counter for the total number of graphs made (users wit
 
 #Get Current Year, Month Number and Name
 d = datetime.datetime.now()
+d = d - datetime.timedelta(days=3)
 thismonth = d.strftime("%m")
 thismonthname = d.strftime("%b")
 thismonthnamelong = d.strftime("%B")
@@ -94,8 +94,8 @@ for ao in aos_df['ao']:
         plt.ylabel("# Posts for " + thismonthname + ", 2021")
         plt.savefig('./plots/' + db + '/PAX_Leaderboard_' + ao + thismonthname + yearnum + '.jpg', bbox_inches='tight')  # save the figure to a file
         print('Monthly Leaderboard Graph created for AO', ao, 'Sending to Slack now... hang tight!')
-        slack.chat.post_message(ao, 'Hey ' + ao + "! Check out the current posting leaderboards for " + thismonthnamelong + ", " + yearnum + " as well as for Year to Date (includes all beatdowns, rucks, Qsource, etc.). Here are the top 20 posters! T-CLAPS to these HIMs. The month isn't over yet, SYITG and get on the board!")
-        slack.files.upload('./plots/' + db + '/PAX_Leaderboard_' + ao + thismonthname + yearnum + '.jpg', channels=ao)
+        #slack.chat.post_message(ao, 'Hey ' + ao + "! Here are the posting leaderboards for " + thismonthnamelong + ", " + yearnum + " as well as for Year to Date (includes all beatdowns, rucks, Qsource, etc.) with the top 20 posters! T-CLAPS to these HIMs.")
+        slack.files_upload(channels=ao, initial_comment='Hey ' + ao + "! Here are the posting leaderboards for " + thismonthnamelong + ", " + yearnum + " as well as for Year to Date (includes all beatdowns, rucks, Qsource, etc.) with the top 20 posters! T-CLAPS to these HIMs.", file='./plots/' + db + '/PAX_Leaderboard_' + ao + thismonthname + yearnum + '.jpg')
         total_graphs = total_graphs + 1
     print('Total graphs made:', total_graphs)
 
@@ -122,6 +122,6 @@ for ao in aos_df['ao']:
         plt.ylabel("# Posts for " + yearnum + " - Year To Date")
         plt.savefig('./plots/' + db + '/PAX_Leaderboard_YTD_' + ao + yearnum + '.jpg', bbox_inches='tight')  # save the figure to a file
         print('YTD Leaderboard Graph created for region', region, 'Sending to Slack now... hang tight!')
-        slack.files.upload('./plots/' + db + '/PAX_Leaderboard_YTD_' + ao + yearnum + '.jpg', channels=ao)
+        slack.files_upload(file='./plots/' + db + '/PAX_Leaderboard_YTD_' + ao + yearnum + '.jpg', channels=ao)
         total_graphs = total_graphs + 1
 print('Total graphs made:', total_graphs)
